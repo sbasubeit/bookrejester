@@ -31,6 +31,10 @@ export default function AuthScreen() {
         if (error) throw error;
         toast.success('تم تسجيل الدخول بنجاح');
       } else {
+        if (!email.toLowerCase().endsWith('@rajhifoundation.org')) {
+          throw new Error('عذراً، التسجيل مسموح فقط لموظفي المؤسسة (ببريد @rajhifoundation.org)');
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -61,10 +65,10 @@ export default function AuthScreen() {
           نظام حجز الكتب
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          {isResetMode 
-            ? 'أدخل بريدك الإلكتروني لاستعادة كلمة المرور' 
-            : isLogin 
-              ? 'تسجيل الدخول للوصول لمكتبتك' 
+          {isResetMode
+            ? 'أدخل بريدك الإلكتروني لاستعادة كلمة المرور'
+            : isLogin
+              ? 'تسجيل الدخول للوصول لمكتبتك'
               : 'إنشاء حساب جديد للاستفادة من النظام'}
         </p>
       </div>
