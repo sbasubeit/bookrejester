@@ -1,0 +1,6 @@
+{
+  "name": "نظام حجز الكتب - مؤسسة الراجحي الخيرية",
+  "description": "نظام مبسط لإدارة وحجز الكتب متوافق مع هوية مؤسسة عبدالله بن عبدالعزيز الراجحي الخيرية.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
