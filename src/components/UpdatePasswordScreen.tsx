@@ -24,16 +24,16 @@ export default function UpdatePasswordScreen() {
       });
 
       if (error) throw error;
-      
+
       setSuccess(true);
       toast.success('تم تحديث كلمة المرور بنجاح');
-      
+
       // Clear hash from URL and update context state
       window.location.hash = '';
       setTimeout(() => {
         clearPasswordRecovery();
       }, 2000);
-      
+
     } catch (error: any) {
       toast.error('حدث خطأ أثناء تحديث كلمة المرور');
       console.error(error);
@@ -61,7 +61,7 @@ export default function UpdatePasswordScreen() {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden" dir="rtl">
       <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-brand-500 rounded-full blur-3xl opacity-10"></div>
       <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-slate-400 rounded-full blur-3xl opacity-10"></div>
-                  
+
       <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl relative z-10 border border-slate-100">
         <div className="text-center mb-8">
           <div className="bg-slate-50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto shadow-sm border border-slate-100 mb-6 group-hover:scale-105 transition-transform">

@@ -14,10 +14,10 @@ interface BookModalProps {
 
 export default function BookModal({ book: initialBook, onClose, onUpdate }: BookModalProps) {
   const { profile } = useAuth();
-  
+
   const [book, setBook] = useState<Book>(initialBook);
   const [loading, setLoading] = useState(true);
-  
+
   // Data states
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [lessons, setLessons] = useState<Interaction[]>([]);
@@ -45,7 +45,7 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
         `)
         .eq('book_id', book.id)
         .order('created_at', { ascending: false });
-      
+
       if (resData) setReservations(resData as Reservation[]);
 
       // 3. Fetch lessons
@@ -70,7 +70,7 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
           .eq('user_id', profile.id)
           .eq('type', 'like')
           .single();
-        
+
         setIsLiked(!!likeData);
       }
 
@@ -93,7 +93,7 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
       toast.error('يرجى تحديد تاريخ الإرجاع المتوقع');
       return;
     }
-    
+
     setActionLoading(true);
     try {
       // Update book status
@@ -131,7 +131,7 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
       // Mark as returned
       const { error: resErr } = await supabase
         .from('reservations')
-        .update({ 
+        .update({
           status: 'returned',
           actual_return_date: new Date().toISOString()
         })
@@ -187,7 +187,7 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
       await supabase
         .from('interactions')
         .insert([{ book_id: book.id, user_id: profile.id, type: 'lesson', content: newLesson.trim() }]);
-      
+
       setNewLesson('');
       toast.success('تمت إضافة الفائدة بنجاح');
       await fetchBookDetails();
@@ -200,7 +200,7 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
 
   const handleDeleteBook = async () => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الكتاب نهائياً؟')) return;
-    
+
     try {
       await supabase.from('books').delete().eq('id', book.id);
       toast.success('تم الحذف');
@@ -215,11 +215,11 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       {/* Full Screen Image Preview Modal */}
       {showImagePreview && (
-        <div 
+        <div
           className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-4 backdrop-blur-md cursor-zoom-out"
           onClick={() => setShowImagePreview(false)}
         >
-          <button 
+          <button
             className="absolute top-6 right-6 p-3 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all backdrop-blur-sm"
             onClick={(e) => {
               e.stopPropagation();
@@ -228,8 +228,8 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
           >
             <X className="w-6 h-6" />
           </button>
-          <img 
-            src={book.cover_url} 
+          <img
+            src={book.cover_url}
             alt="غلاف الكتاب (مكبر)"
             className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
@@ -238,21 +238,21 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
       )}
 
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl flex flex-col md:flex-row overflow-hidden max-h-[90vh]">
-        
+
         {/* Cover Section (Left on Desktop, Top on Mobile) */}
-        <div 
+        <div
           className="md:w-5/12 bg-slate-100 relative group flex-shrink-0 flex items-center justify-center cursor-zoom-in overflow-hidden"
           onClick={() => setShowImagePreview(true)}
         >
-          <img 
-            src={book.cover_url} 
+          <img
+            src={book.cover_url}
             alt="غلاف الكتاب"
             className="w-full h-full object-cover max-h-[40vh] md:max-h-none group-hover:scale-105 transition-transform duration-500 ease-out"
           />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-          
+
           {profile?.role === 'admin' && (
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); handleDeleteBook(); }}
               className="absolute top-4 left-4 p-2 bg-white/90 text-red-600 rounded-full hover:bg-red-50 hover:scale-110 transition-all shadow-sm"
               title="حذف الكتاب"
@@ -260,7 +260,7 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
               <Trash2 className="w-5 h-5" />
             </button>
           )}
-          
+
           <button
             onClick={(e) => { e.stopPropagation(); toggleLike(); }}
             className="absolute bottom-4 right-4 p-3 bg-white/90 rounded-full hover:scale-110 transition-all shadow-lg flex items-center justify-center gap-2"
@@ -280,13 +280,13 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
                   متوفر للحجز
                 </span>
               ) : (
-                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
                   <Clock className="w-4 h-4" />
                   محجوز حالياً
                 </span>
               )}
             </div>
-            <button 
+            <button
               onClick={onClose}
               className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 rounded-full transition-colors"
             >
@@ -295,9 +295,28 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
           </div>
 
           <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+
+            {(book.title || book.category || book.link) && (
+              <div className="mb-6 space-y-3 pb-6 border-b border-slate-100">
+                {book.title && <h2 className="text-3xl font-bold text-slate-900 leading-tight">{book.title}</h2>}
+                <div className="flex flex-wrap items-center gap-3">
+                  {book.category && (
+                    <span className="inline-flex items-center px-3 py-1 bg-brand-50 border border-brand-100 text-brand-700 rounded-full text-sm font-medium">
+                      {book.category}
+                    </span>
+                  )}
+                  {book.link && (
+                    <a href={book.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-brand-600 hover:text-brand-800 font-bold underline underline-offset-4 decoration-2 decoration-brand-200 transition-colors">
+                      رابط الكتاب (خارجي)
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
             {!loading && (
               <div className="space-y-8">
-                
+
                 {/* Action Box */}
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                   {book.is_available ? (
@@ -305,8 +324,8 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
                       <label className="block text-sm font-bold text-slate-700">تاريخ الإرجاع المتوقع</label>
                       <div className="flex gap-3">
                         <div className="relative flex-1">
-                          <input 
-                            type="date" 
+                          <input
+                            type="date"
                             min={new Date().toISOString().split('T')[0]}
                             value={returnDate}
                             onChange={e => setReturnDate(e.target.value)}
@@ -328,11 +347,11 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
                       <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
                         <p className="text-sm text-slate-600 leading-relaxed">
                           الكتاب محجوز حالياً بواسطة <strong className="text-slate-900">{currentReservation?.profiles?.full_name}</strong>.
-                          <br/>
+                          <br />
                           تاريخ الإرجاع المتوقع: <strong className="text-slate-900">{currentReservation?.expected_return_date ? format(new Date(currentReservation.expected_return_date), 'yyyy-MM-dd') : 'غير محدد'}</strong>.
                         </p>
                       </div>
-                      
+
                       <div className="flex gap-3 mt-4">
                         {(profile?.id === currentReservation?.user_id || profile?.role === 'admin') && (
                           <button
@@ -354,7 +373,7 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
                     <MessageSquare className="w-5 h-5 text-brand-600" />
                     الدروس المستفادة
                   </h3>
-                  
+
                   <div className="space-y-4">
                     {/* Add new lesson */}
                     <div className="flex gap-3">

@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [books, setBooks] = useState<BookType[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'liked' | 'reserved'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
 
@@ -67,11 +68,15 @@ export default function Dashboard() {
     fetchBooks();
   }, []);
 
-  const displayedBooks = [...books].sort((a, b) => {
-    if (activeTab === 'liked') return (b.likes_count || 0) - (a.likes_count || 0);
-    if (activeTab === 'reserved') return (b.borrow_count || 0) - (a.borrow_count || 0);
-    return 0; // 'all' uses natural creation order from API
-  });
+  const displayedBooks = [...books]
+    .filter((b) => selectedCategory === 'all' || b.category === selectedCategory)
+    .sort((a, b) => {
+      if (activeTab === 'liked') return (b.likes_count || 0) - (a.likes_count || 0);
+      if (activeTab === 'reserved') return (b.borrow_count || 0) - (a.borrow_count || 0);
+      return 0; // 'all' uses natural creation order from API
+    });
+
+  const categories = Array.from(new Set(books.map(b => b.category).filter(Boolean))) as string[];
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -85,12 +90,12 @@ export default function Dashboard() {
               </div>
               <span className="font-bold text-xl tracking-tight text-slate-800 hidden sm:block">نظام حجز الكتب</span>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <span className="text-sm text-slate-600 font-medium hidden sm:block">
                 مرحباً ({profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'الضيف'})
               </span>
-              
+
               {profile?.role === 'admin' && (
                 <button
                   onClick={() => setShowAdminPanel(true)}
@@ -100,7 +105,7 @@ export default function Dashboard() {
                   <span className="hidden sm:block">الإدارة</span>
                 </button>
               )}
-              
+
               <button
                 onClick={signOut}
                 className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-red-600 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
@@ -114,27 +119,44 @@ export default function Dashboard() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* Tabs */}
-        <div className="flex space-x-2 space-x-reverse mb-8 overflow-x-auto pb-2 border-b border-slate-200">
-          {[
-            { id: 'all', label: 'جميع الكتب' },
-            { id: 'liked', label: 'الأعلى إعجاباً' },
-            { id: 'reserved', label: 'الأكثر اقتناءً' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={cn(
-                "px-5 py-2.5 rounded-t-lg font-medium text-sm transition-colors whitespace-nowrap",
-                activeTab === tab.id 
-                  ? "bg-brand-600 text-white shadow-sm" 
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
+
+        {/* Tabs and Filters */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div className="flex space-x-2 space-x-reverse overflow-x-auto pb-2 border-b border-slate-200 flex-1 w-full md:w-auto overflow-y-hidden hide-scrollbar">
+            {[
+              { id: 'all', label: 'جميع الكتب' },
+              { id: 'liked', label: 'الأعلى إعجاباً' },
+              { id: 'reserved', label: 'الأكثر اقتناءً' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={cn(
+                  "px-5 py-2.5 rounded-t-lg font-medium text-sm transition-colors whitespace-nowrap",
+                  activeTab === tab.id
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {categories.length > 0 && (
+            <div className="w-full md:w-64 shrink-0">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 font-medium text-slate-700 bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              >
+                <option value="all">جميع التصنيفات</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Books Grid */}
@@ -153,8 +175,8 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {displayedBooks.map((book) => (
-              <div 
-                key={book.id} 
+              <div
+                key={book.id}
                 className="group relative bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-brand-500"
                 onClick={() => setSelectedBook(book)}
                 tabIndex={0}
@@ -168,23 +190,38 @@ export default function Dashboard() {
                 <div className="aspect-[2/3] w-full bg-slate-100 relative">
                   <img
                     src={book.cover_url}
-                    alt="غلاف الكتاب"
+                    alt={book.title || "غلاف الكتاب"}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   {!book.is_available && (
-                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center">
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center z-10">
                       <span className="bg-white/90 text-slate-900 text-sm font-bold px-3 py-1.5 rounded-full shadow-sm">
                         محجوز
                       </span>
                     </div>
                   )}
+
+                  {/* Stats Overlay (Bottom Edge) */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-12 text-white flex justify-between text-xs font-medium z-10">
+                    <span className="flex items-center gap-1">💖 {book.likes_count || 0}</span>
+                    <span className="flex items-center gap-1">📖 {book.borrow_count || 0} اقتناء</span>
+                  </div>
                 </div>
-                
-                {/* Stats Overlay (Bottom Edge) */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8 text-white flex justify-between text-xs font-medium">
-                  <span>💖 {book.likes_count || 0}</span>
-                  <span>📖 {book.borrow_count || 0} اقتناء</span>
-                </div>
+
+                {(book.title || book.category) && (
+                  <div className="p-3 bg-white border-t border-slate-100">
+                    {book.category && (
+                      <div className="text-[10px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full mb-1.5 inline-block border border-brand-100">
+                        {book.category}
+                      </div>
+                    )}
+                    {book.title && (
+                      <h4 className="font-bold text-sm text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-2" title={book.title}>
+                        {book.title}
+                      </h4>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -193,15 +230,15 @@ export default function Dashboard() {
 
       {/* Modals */}
       {showAdminPanel && (
-        <AdminPanel 
-          onClose={() => setShowAdminPanel(false)} 
+        <AdminPanel
+          onClose={() => setShowAdminPanel(false)}
           onBookAdded={fetchBooks}
         />
       )}
-      
+
       {selectedBook && (
-        <BookModal 
-          book={selectedBook} 
+        <BookModal
+          book={selectedBook}
           onClose={() => setSelectedBook(null)}
           onUpdate={fetchBooks}
         />

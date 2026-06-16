@@ -12,6 +12,9 @@ export default function AdminPanel({ onClose, onBookAdded }: AdminPanelProps) {
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
+  const [link, setLink] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -48,7 +51,12 @@ export default function AdminPanel({ onClose, onBookAdded }: AdminPanelProps) {
       // Insert record
       const { error: dbError } = await supabase
         .from('books')
-        .insert([{ cover_url: publicUrlData.publicUrl }]);
+        .insert([{
+          cover_url: publicUrlData.publicUrl,
+          title: title.trim() || null,
+          category: category.trim() || null,
+          link: link.trim() || null
+        }]);
 
       if (dbError) throw dbError;
 
@@ -68,7 +76,7 @@ export default function AdminPanel({ onClose, onBookAdded }: AdminPanelProps) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
           <h2 className="text-lg font-bold text-slate-800">إضافة كتاب جديد</h2>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors"
           >
@@ -85,7 +93,7 @@ export default function AdminPanel({ onClose, onBookAdded }: AdminPanelProps) {
 
           <div className="mb-6">
             {previewUrl ? (
-              <div className="relative w-48 mx-auto aspect-[2/3] rounded-lg overflow-hidden border-2 border-slate-200 shadow-sm">
+              <div className="relative w-32 sm:w-48 mx-auto aspect-[2/3] rounded-lg overflow-hidden border-2 border-slate-200 shadow-sm">
                 <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                 <button
                   onClick={() => {
@@ -98,20 +106,56 @@ export default function AdminPanel({ onClose, onBookAdded }: AdminPanelProps) {
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+              <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Upload className="w-10 h-10 text-slate-400 mb-3" />
                   <p className="mb-2 text-sm text-slate-600 font-medium">اضغط لاختيار صورة الغلاف</p>
                   <p className="text-xs text-slate-500">PNG, JPG, JPEG</p>
                 </div>
-                <input 
-                  type="file" 
-                  className="hidden" 
+                <input
+                  type="file"
+                  className="hidden"
                   accept="image/*"
                   onChange={handleFileChange}
                 />
               </label>
             )}
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">اسم الكتاب (اختياري)</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all font-medium text-slate-800"
+                placeholder="عنوان الكتاب..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">التصنيف (اختياري)</label>
+              <input
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all font-medium text-slate-800"
+                placeholder="مثال: تطوير الذات، رواية، إسلاميات..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">رابط الكتاب (اختياري)</label>
+              <input
+                type="url"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all font-medium text-slate-800"
+                placeholder="https://..."
+                dir="ltr"
+              />
+            </div>
           </div>
         </div>
 

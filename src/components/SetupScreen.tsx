@@ -10,7 +10,7 @@ export default function SetupScreen() {
           <h1 className="text-3xl font-bold mb-2">إعداد قاعدة البيانات مطلوب</h1>
           <p className="text-brand-100 font-medium text-lg">لم يتم العثور على الجداول المطلوبة في Supabase.</p>
         </div>
-        
+
         <div className="p-8">
           <div className="flex items-start gap-4 mb-6 p-4 bg-amber-50 text-amber-800 rounded-lg border border-amber-200">
             <AlertTriangle className="w-6 h-6 shrink-0 mt-0.5" />
@@ -23,8 +23,8 @@ export default function SetupScreen() {
           </div>
 
           <div className="relative group">
-<pre className="bg-slate-900 text-slate-100 p-6 rounded-xl font-mono text-sm sm:text-base overflow-x-auto w-full text-left" dir="ltr">
-{`-- Run this in your Supabase SQL Editor
+            <pre className="bg-slate-900 text-slate-100 p-6 rounded-xl font-mono text-sm sm:text-base overflow-x-auto w-full text-left" dir="ltr">
+              {`-- Run this in your Supabase SQL Editor
 
 create extension if not exists "uuid-ossp";
 
@@ -40,8 +40,16 @@ create table if not exists public.books (
   id uuid default gen_random_uuid() primary key,
   cover_url text not null,
   is_available boolean default true,
+  title text,
+  category text,
+  link text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- تحديث الجدول لو كان موجوداً لتفادي الأخطاء
+alter table public.books add column if not exists title text;
+alter table public.books add column if not exists category text;
+alter table public.books add column if not exists link text;
 
 create table if not exists public.reservations (
   id uuid default gen_random_uuid() primary key,
@@ -86,10 +94,10 @@ create trigger on_auth_user_created
 -- بعد التسجيل لأول مرة كمشرف، يمكنك تشغيل هذا السطر لمنح نفسك صلاحية الأدمن:
 -- update public.profiles set role = 'admin' where email = 'your-email@example.com';
 `}
-</pre>
+            </pre>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => window.location.reload()}
             className="w-full mt-8 bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-brand-200 flex items-center justify-center gap-2"
           >

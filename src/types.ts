@@ -13,6 +13,9 @@ export interface Book {
   cover_url: string;
   is_available: boolean;
   created_at: string;
+  title?: string;
+  category?: string;
+  link?: string;
   // Computed values
   likes_count?: number;
   borrow_count?: number;
