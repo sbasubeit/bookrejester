@@ -8,8 +8,10 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   isLoading: boolean;
+  isPasswordRecovery: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  clearPasswordRecovery: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +21,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => {
+    // Check initial hash before Supabase potentially clears it
+    if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
+      return true;
+    }
+    return false;
+  });
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -51,15 +60,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      }
+      
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
         setProfile(null);
       }
     });
+
+    // Also check current URL hash just in case event fired before mount
+    if (window.location.hash.includes('type=recovery')) {
+      setIsPasswordRecovery(true);
+    }
 
     return () => subscription.unsubscribe();
   }, []);
@@ -74,8 +93,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const clearPasswordRecovery = () => {
+    setIsPasswordRecovery(false);
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, isLoading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, isLoading, isPasswordRecovery, signOut, refreshProfile, clearPasswordRecovery }}>
       {children}
     </AuthContext.Provider>
   );

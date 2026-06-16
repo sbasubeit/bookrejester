@@ -69,9 +69,63 @@ create trigger on_auth_user_created
 -- بعد التسجيل لأول مرة كمشرف، يمكنك تشغيل هذا السطر لمنح نفسك صلاحية الأدمن:
 -- update public.profiles set role = 'admin' where email = 'your-email@example.com';
 
--- --- هام: إصلاح مشكلات الصلاحيات (RLS) ---
--- إذا واجهتك أي أخطاء بالوصول للبيانات (مثل الخطأ في جلب الكتب أو عدم ظهور الاسم)، قم بتشغيل الأوامر التالية لتعطيل صلاحيات الصفوف مؤقتاً للتبسيط:
-alter table public.profiles disable row level security;
-alter table public.books disable row level security;
-alter table public.reservations disable row level security;
-alter table public.interactions disable row level security;
+-- تفعيل مستوى الأمان للصفوف (RLS)
+create table if not exists public.notifications_queue (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  book_id uuid references public.books(id) on delete cascade not null,
+  email text not null,
+  subject text not null,
+  status text default 'pending',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.profiles enable row level security;
+alter table public.books enable row level security;
+alter table public.reservations enable row level security;
+alter table public.interactions enable row level security;
+alter table public.notifications_queue enable row level security;
+
+-- سياسات جدول profiles
+drop policy if exists "Public profiles are viewable by everyone." on public.profiles;
+create policy "Public profiles are viewable by everyone." on public.profiles for select using ( true );
+
+drop policy if exists "Users can insert their own profile." on public.profiles;
+create policy "Users can insert their own profile." on public.profiles for insert with check ( auth.uid() = id );
+
+drop policy if exists "Users can update own profile." on public.profiles;
+create policy "Users can update own profile." on public.profiles for update using ( auth.uid() = id );
+
+-- سياسات جدول books
+drop policy if exists "Books are viewable by everyone." on public.books;
+create policy "Books are viewable by everyone." on public.books for select using ( true );
+
+drop policy if exists "Admins can insert books." on public.books;
+create policy "Admins can insert books." on public.books for insert with check ( exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') );
+
+drop policy if exists "Admins can update books." on public.books;
+create policy "Admins can update books." on public.books for update using ( exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') );
+
+drop policy if exists "Admins can delete books." on public.books;
+create policy "Admins can delete books." on public.books for delete using ( exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') );
+
+-- سياسات جدول reservations
+drop policy if exists "Reservations are viewable by everyone." on public.reservations;
+create policy "Reservations are viewable by everyone." on public.reservations for select using ( true );
+
+drop policy if exists "Users can create reservations." on public.reservations;
+create policy "Users can create reservations." on public.reservations for insert with check ( auth.uid() = user_id );
+
+drop policy if exists "Users can update their own reservations or admins can." on public.reservations;
+create policy "Users can update their own reservations or admins can." on public.reservations for update using ( auth.uid() = user_id or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') );
+
+-- سياسات جدول interactions
+drop policy if exists "Interactions viewable by everyone" on public.interactions;
+create policy "Interactions viewable by everyone" on public.interactions for select using ( true );
+
+drop policy if exists "Users can manage their interactions" on public.interactions;
+create policy "Users can manage their interactions" on public.interactions for all using ( auth.uid() = user_id );
+
+-- سياسات الإشعارات
+drop policy if exists "Admins can insert notifications" on public.notifications_queue;
+create policy "Admins can insert notifications" on public.notifications_queue for insert with check ( exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') );

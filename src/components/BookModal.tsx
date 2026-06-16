@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Book, Reservation, Interaction } from '../types';
-import { X, Heart, MessageSquare, History, CheckCircle, Clock, Trash2, CalendarDays, Bell } from 'lucide-react';
+import { X, Heart, MessageSquare, History, CheckCircle, Clock, Trash2, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -28,6 +28,7 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
   const [returnDate, setReturnDate] = useState('');
   const [newLesson, setNewLesson] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
 
   const fetchBookDetails = async () => {
     try {
@@ -197,28 +198,6 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
     }
   };
 
-  const handleNotify = () => {
-    if (!currentReservation?.profiles?.email) {
-      toast.error('لم يتم العثور على البريد الإلكتروني للمستخدم');
-      return;
-    }
-    const subject = encodeURIComponent('إشعار بخصوص الكتاب المحجوز');
-    const body = encodeURIComponent(`مرحباً ${currentReservation.profiles.full_name}،\n\nنود تذكيرك بإرجاع الكتاب الذي قمت بحجزه بتاريخ ${format(new Date(currentReservation.start_date), 'yyyy-MM-dd')}.\n\nشكراً لتعاونك.`);
-    
-    const mailtoLink = `mailto:${currentReservation.profiles.email}?subject=${subject}&body=${body}`;
-    
-    // استخدام عنصر a مع _blank ومحاولة فتحه لتجاوز قيود iframe
-    const a = document.createElement('a');
-    a.href = mailtoLink;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    toast.success('تم إنشاء رسالة البريد في تطبيق الإيميل الخاص بك');
-  };
-
   const handleDeleteBook = async () => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الكتاب نهائياً؟')) return;
     
@@ -234,18 +213,47 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      {/* Full Screen Image Preview Modal */}
+      {showImagePreview && (
+        <div 
+          className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-4 backdrop-blur-md cursor-zoom-out"
+          onClick={() => setShowImagePreview(false)}
+        >
+          <button 
+            className="absolute top-6 right-6 p-3 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all backdrop-blur-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowImagePreview(false);
+            }}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img 
+            src={book.cover_url} 
+            alt="غلاف الكتاب (مكبر)"
+            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl flex flex-col md:flex-row overflow-hidden max-h-[90vh]">
         
         {/* Cover Section (Left on Desktop, Top on Mobile) */}
-        <div className="md:w-5/12 bg-slate-100 relative group flex-shrink-0 flex items-center justify-center">
+        <div 
+          className="md:w-5/12 bg-slate-100 relative group flex-shrink-0 flex items-center justify-center cursor-zoom-in overflow-hidden"
+          onClick={() => setShowImagePreview(true)}
+        >
           <img 
             src={book.cover_url} 
             alt="غلاف الكتاب"
-            className="w-full h-full object-cover max-h-[40vh] md:max-h-none"
+            className="w-full h-full object-cover max-h-[40vh] md:max-h-none group-hover:scale-105 transition-transform duration-500 ease-out"
           />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+          
           {profile?.role === 'admin' && (
             <button 
-              onClick={handleDeleteBook}
+              onClick={(e) => { e.stopPropagation(); handleDeleteBook(); }}
               className="absolute top-4 left-4 p-2 bg-white/90 text-red-600 rounded-full hover:bg-red-50 hover:scale-110 transition-all shadow-sm"
               title="حذف الكتاب"
             >
@@ -254,7 +262,7 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
           )}
           
           <button
-            onClick={toggleLike}
+            onClick={(e) => { e.stopPropagation(); toggleLike(); }}
             className="absolute bottom-4 right-4 p-3 bg-white/90 rounded-full hover:scale-110 transition-all shadow-lg flex items-center justify-center gap-2"
           >
             <Heart className={`w-5 h-5 transition-colors ${isLiked ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
@@ -330,18 +338,9 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
                           <button
                             onClick={handleReturn}
                             disabled={actionLoading}
-                            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors shadow-md disabled:opacity-50"
+                            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors shadow-md disabled:opacity-50"
                           >
                             إرجاع الكتاب
-                          </button>
-                        )}
-                        {profile?.role === 'admin' && (
-                          <button
-                            onClick={handleNotify}
-                            className="px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg transition-colors shadow-md flex items-center justify-center gap-2"
-                            title="إرسال إشعار تذكير"
-                          >
-                            <Bell className="w-5 h-5" />
                           </button>
                         )}
                       </div>
@@ -442,6 +441,8 @@ export default function BookModal({ book: initialBook, onClose, onUpdate }: Book
               </div>
             )}
           </div>
+
+
         </div>
       </div>
     </div>

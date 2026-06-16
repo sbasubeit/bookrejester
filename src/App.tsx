@@ -10,10 +10,11 @@ import { Toaster } from 'react-hot-toast';
 import AuthScreen from './components/AuthScreen';
 import SetupScreen from './components/SetupScreen';
 import Dashboard from './components/Dashboard';
+import UpdatePasswordScreen from './components/UpdatePasswordScreen';
 import { Loader2 } from 'lucide-react';
 
 function AppContent() {
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, isPasswordRecovery } = useAuth();
   const [needsSetup, setNeedsSetup] = useState(false);
   const [checkingSetup, setCheckingSetup] = useState(true);
 
@@ -43,6 +44,11 @@ function AppContent() {
 
   if (needsSetup) {
     return <SetupScreen />;
+  }
+
+  // If user clicked the reset password link, show the update password screen
+  if (isPasswordRecovery) {
+    return <UpdatePasswordScreen />;
   }
 
   if (!session) {
